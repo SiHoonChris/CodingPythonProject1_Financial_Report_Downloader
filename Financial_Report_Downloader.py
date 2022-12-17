@@ -1,10 +1,9 @@
 from bs4 import BeautifulSoup
-headers="Mozilla/5.0" # user-agent 전체 안써도 문제 없음
+headers="Mozilla/5.0"
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 options = webdriver.ChromeOptions()
 options.headless = True
-options.add_argument("window-size=1920x1080")
 options.add_argument("user-agent="+headers)
 import time
 import datetime
@@ -205,19 +204,45 @@ def KR_Report(*CODEs):
 
 
 # ---------- 전체(한국, 미국) 자료 다운로드 / Report_Downloader() ---------- #
+time_spent=0
+
 def Report_Downloader():
     SearchDate()
     start_time=time.time()
-    US_Report("320193", "1652044")  # AAPL , GOOGL
+    US_Report("1652044", "320193")  # GOOGL , AAPL
     KR_Report("005930", "000660")   # 삼성전자 , SK하이닉스
     end_time=time.time()
+    global time_spent
     time_spent = end_time - start_time
-    print(f"({str(round((time_spent), 4))} sec.)")
 # ---------- 전체(한국, 미국) 자료 다운로드 / Report_Downloader() ---------- #
 
+
+# ---------- 크롬 웹드라이버 버전 확인 / Chromedriver_Id() ---------- #
+def Chromedriver_Id():
+    browser=webdriver.Chrome()
+    browser.get("chrome://version/") # protocol이 http/https가 아니라 chrome임
+    soup = BeautifulSoup(browser.page_source, "lxml")
+    version = soup.find("tbody").find_all("tr")[0].find("td", attrs={"class":"version"})\
+        .find("span", attrs={"id":"copy-content"}).find_all("span")[0].get_text()
+    print('[ 사용중인 웹드라이버의 버전이 현재 크롬 버전과 다름 ]')
+    print('=> https://chromedriver.chromium.org/downloads 에서 \n   version '+version[:3]+' 다운로드/설치 후 재시도')
+
+    # https://stackoverflow.com/questions/59416829/any-way-to-leave-selenium-web-pages-open-after-running-your-script-completely-in
+    options.add_experimental_option("detach", True)
+    options.headless = False
+    browser_download=webdriver.Chrome(options=options)
+    browser_download.get("https://chromedriver.chromium.org/downloads")
+# ---------- 크롬 웹드라이버 버전 확인 / Chromedriver_Id() ---------- #
 
 
 # ---------- 전체(한국, 미국) 자료 다운로드 실행 ---------- #
 if __name__=="__main__":
-    Report_Downloader()
+    try:
+        Report_Downloader()
+    except KeyboardInterrupt:
+        print("\n\n종료(KeyboardInterrupt)")
+    except:
+        Chromedriver_Id()
+    finally:
+        print(f"({str(round((time_spent), 4))} sec.) - fin.")
 # ---------- 전체(한국, 미국) 자료 다운로드 실행 ---------- #
